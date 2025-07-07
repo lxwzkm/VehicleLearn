@@ -23,14 +23,22 @@ public:
 	FRotator GetSuspensionRotation();
 	void WheelRolling(const float DeltaTime,const float PowerValue,bool bForceRolling=false);
 	void SetWheelSteerAngle(const float InSteerAngle);
+	void GetPressure(const float DeltaTime,float& pressure,float& SpringForce,float& DampForce);
+
+	UPROPERTY(EditDefaultsOnly)
+	TEnumAsByte<ETraceTypeQuery> WheelTraceType;
 	
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "SuspensionInfo")
 	float NatureSuspensionLength=100.f;
-	
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "VehicleInfo")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "SuspensionInfo")
 	float SuspensionDamp=100.f;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "VehicleInfo")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "SuspensionInfo")
 	float SuspensionStrength=100.f;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "SuspensionInfo")
+	float SuspensionLength=0.f;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "SuspensionInfo")
+	float LastSuspensionLength=0.f;
+	
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "VehicleInfo")
 	FTransform WheelInitRelTransf=FTransform();
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "VehicleInfo")
@@ -44,6 +52,8 @@ public:
 	FVector LandImpactPoint=FVector::ZeroVector;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "WheelInfo")
 	FVector LandImpactNormal=FVector::ZeroVector;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "WheelInfo")
+	float WheelRadius=45.f;
 
 protected:
 };
