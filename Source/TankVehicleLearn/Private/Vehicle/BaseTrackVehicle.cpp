@@ -182,6 +182,94 @@ TArray<FVector> ABaseTrackVehicle::GetTanBetweenWheels(const FVector Incenter1,c
 	return TmpTanPoints;
 }
 
+void ABaseTrackVehicle::UpdateVehicleMovement(const float DeltaTime)
+{
+	UpdateWheelPosition();
+	UpdateWheelRolling(DeltaTime);
+	UpdateWheelYaw(DeltaTime);
+	UpdateTrackMovement(LeftTrackSpline,InstancedTrackMesh,LeftWheels,LeftWheelSplineMap,LeftWheelPositionDiffMap,LeftTrackPartSplinePositionMap,DeltaTime,true);
+	UpdateTrackMovement(RightTrackSpline,InstancedTrackMesh,RightWheels,RightWheelSplineMap,RightWheelPositionDiffMap,RightTrackPartSplinePositionMap,DeltaTime);
+}
+
+void ABaseTrackVehicle::UpdateWheelRolling(const float DeltaTime)
+{
+	SideWheelRolling(DeltaTime,LeftWheels);
+	SideWheelRolling(DeltaTime,RightWheels);
+}
+
+void ABaseTrackVehicle::SideWheelRolling(const float DeltaTime,TArray<UBaseVehicleWheel*>& WheelList)
+{
+	bool SideOnLand=false;
+	for (auto Wheel:WheelList)
+	{
+		SideOnLand=Wheel->IsZeroPressure()||SideOnLand;
+	}
+	for (auto Wheel:WheelList)
+	{
+		Wheel->WheelRolling(DeltaTime,PowerValue,SideOnLand);
+	}
+}
+
+void ABaseTrackVehicle::UpdateTrackMovement(USplineComponent* InputTrackSpline,
+                                            const UInstancedStaticMeshComponent* InputInstancedTrackMesh, const TArray<UBaseVehicleWheel*>& WheelList,
+                                            TMap<int32, UBaseVehicleWheel*>& InWheelSplineMap, TMap<int32, FVector>& InWheelPositionDiffMap,
+                                            TMap<int32, float>& TrackPartSplinePositionMap,float DeltaTime, bool bIsLeftPart)
+{
+	//Sequence 1
+	for (int32 i=0;i<InputTrackSpline->GetNumberOfSplinePoints();i++)
+	{
+		TObjectPtr<UBaseVehicleWheel> TmpWheel=InWheelSplineMap[i];
+		float LocationZ=(TmpWheel->GetRelativeLocation()+InWheelPositionDiffMap[i]).Z;
+		FVector SplineLocation=InputTrackSpline->GetLocationAtSplinePoint(i,ESplineCoordinateSpace::Local);
+		SplineLocation.Z=LocationZ;
+		InputTrackSpline->SetLocationAtSplinePoint(i,SplineLocation,ESplineCoordinateSpace::Local,true);
+	}
+	//Sequence 2
+	const FVector WheelLocation=WheelList[0]->GetComponentLocation();
+	const FVector Velocity=VehicleBody->GetPhysicsLinearVelocityAtPoint(WheelLocation);
+	const float DotValue=UKismetMathLibrary::Dot_VectorVector(VehicleBody->GetForwardVector(),Velocity);
+	const float BodySpeed=UKismetMathLibrary::Sin(DotValue)*Velocity.Length();
+
+	//Sequence 3
+	const float SplineLength=InputTrackSpline->GetSplineLength();
+	const float PerTrackLength=SplineLength/InstancedTrackMesh->GetInstanceCount();
+	float TrackMoveDist=bIsLeftPart?LeftTrackMoveDist:RightTrackMoveDist;
+	TrackMoveDist=TrackMoveDist+BodySpeed*DeltaTime;
+	float TmpTrackMoveDist=TrackMoveDist<0?TrackMoveDist+SplineLength:TrackMoveDist;
+	TrackMoveDist=TrackMoveDist>SplineLength?TrackMoveDist-SplineLength:TrackMoveDist;
+	if (bIsLeftPart)
+	{
+		LeftTrackMoveDist=TrackMoveDist;
+	}
+	else
+	{
+		RightTrackMoveDist=TrackMoveDist;
+	}
+
+	//Sequence 4
+	for (int32 i=0;i<InputInstancedTrackMesh->GetInstanceCount();i++)
+	{
+		if (TrackPartSplinePositionMap.Find(i))
+		{
+			float TmpPosition=TrackPartSplinePositionMap[i];
+			TmpPosition=TmpPosition-TrackMoveDist;
+			if (TmpPosition<0)
+			{
+				TmpPosition+=SplineLength;
+			}
+			const FVector NewLocation=InputTrackSpline->GetLocationAtDistanceAlongSpline(TmpPosition,ESplineCoordinateSpace::Local);
+			FRotator Rotation=InputTrackSpline->GetRotationAtDistanceAlongSpline(TmpPosition,ESplineCoordinateSpace::Local);
+			const FVector RightVector=InputTrackSpline->GetRightVectorAtDistanceAlongSpline(TmpPosition,ESplineCoordinateSpace::Local);
+			if (RightVector.Y<0)
+			{
+				Rotation.Roll=180.f+TrackPartRot;
+			}
+			FTransform NewTransform=FTransform(Rotation,NewLocation,NewLocation);
+			InstancedTrackMesh->UpdateInstanceTransform(i,NewTransform);
+		}
+	}
+}
+
 void ABaseTrackVehicle::CompleteConstructTarack()
 {
 	for (auto Wheel:LeftWheels)
@@ -199,5 +287,42 @@ void ABaseTrackVehicle::CompleteConstructTarack()
 	if (Turrent->DoesSocketExist("GunSocket"))
 	{
 		TurrentGun->SetWorldLocation(Turrent->GetSocketLocation("GunSocket"));
+	}
+}
+
+void ABaseTrackVehicle::UpdateSteeringForce()
+{
+	Super::UpdateSteeringForce();
+	const float SR=SteeringAngle/MaxSteeringAngle;
+	const float LeftPower=SR*5*MaxPower;
+	const float RightPower=SR*-5*MaxPower;
+
+	for (auto Wheel:LeftWheels)
+	{
+		UpdateTractionForceAtWheel(Wheel,0,LeftPower);
+	}
+	for (auto Wheel:RightWheels)
+	{
+		UpdateTractionForceAtWheel(Wheel,0,RightPower);
+	}
+}
+
+void ABaseTrackVehicle::InitVehicle()
+{
+	VehicleMass=VehicleBody->GetMass();
+	const float TempMass=VehicleMass/100;
+
+	MaxBreakForce=TempMass * MaxBreakForce * 1.5f;
+	BreakSpeed=TempMass * BreakSpeed * 1.0f;
+	const float Rate=GetDriveCount()/VehicleWheels.Num();
+	MaxPower=TempMass * MaxPower * Rate* 0.125 ;
+	PowerUpSpeed=TempMass * PowerUpSpeed * 0.25 ;
+	SuspensionDamp=TempMass * SuspensionDamp * 1.0f ;
+	SuspensionStrength=TempMass * SuspensionStrength * 5.f ;
+
+	for (const auto Wheel:VehicleWheels)
+	{
+		Wheel->SuspensionDamp=SuspensionDamp;
+		Wheel->SuspensionStrength=SuspensionStrength;
 	}
 }

@@ -33,11 +33,11 @@ public:
 	void UpdateTractionForce();
 	void UpdateTractionForceAtWheel(UBaseVehicleWheel* InputWheel,const float InputPower,const float InputAdjustPower=0.f);
 	float GetSpeed();
-	void UpdateSteeringForce();
+	virtual void UpdateSteeringForce();
 	FVector ProjectToPlane(const FVector&NormalVector,const FVector& InputVector);
-	void UpdateVehicleMovement(const float DeltaTime);
+	virtual void UpdateVehicleMovement(const float DeltaTime);
 	void UpdateWheelPosition();
-	void UpdateWheelRolling(const float DeltaTime);
+	virtual void UpdateWheelRolling(const float DeltaTime);
 	void UpdateWheelYaw(const float DeltaTime);
 	void UpdateVehicleDodyState();
 	

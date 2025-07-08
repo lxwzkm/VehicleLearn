@@ -28,8 +28,16 @@ public:
 		TArray<int32>& WheelPointOut,TArray<int32>& NextWheelPointOut);
 	void InsertPointsOnWheel(const FVector InStartPoint,const FVector InEndPoint,const FVector InCenter,const float InWheelRadius,TArray<FVector>& OutInsertPoints);
 	TArray<FVector> GetTanBetweenWheels(const FVector Incenter1,const float InRadius1,const FVector Incenter2,const float InRadius2,FVector InDownDirction,const FVector InForwardDirection);
+
+	virtual void UpdateVehicleMovement(const float DeltaTime) override;
+	virtual void UpdateWheelRolling(const float DeltaTime) override;
+	void SideWheelRolling(const float DeltaTime,TArray<UBaseVehicleWheel*>& WheelList);
+	void UpdateTrackMovement(USplineComponent* InputTrackSpline,const UInstancedStaticMeshComponent* InputInstancedTrackMesh,const TArray<UBaseVehicleWheel*>& WheelList,TMap<int32,UBaseVehicleWheel*>& InWheelSplineMap
+		,TMap<int32,FVector>& InWheelPositionDiffMap,TMap<int32,float>& TrackPartSplinePositionMap,float DeltaTime,bool bIsLeftPart=false);
 	UFUNCTION(BlueprintCallable)
 	void CompleteConstructTarack();
+	virtual void UpdateSteeringForce() override;
+	virtual void InitVehicle() override;
 	
 	
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
@@ -44,6 +52,10 @@ public:
 	TMap<int32,float> LeftTrackPartSplinePositionMap;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
 	TMap<int32,float> RightTrackPartSplinePositionMap;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	float LeftTrackMoveDist=0;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	float RightTrackMoveDist=0;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="TrackInfo")
 	float TrackThick=10.f;
