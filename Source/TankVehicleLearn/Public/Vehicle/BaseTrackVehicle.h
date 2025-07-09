@@ -40,21 +40,21 @@ public:
 	virtual void InitVehicle() override;
 	
 	
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WheelSpline")
 	TMap<int32,UBaseVehicleWheel*> LeftWheelSplineMap;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WheelSpline")
 	TMap<int32,UBaseVehicleWheel*> RightWheelSplineMap;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WheelSpline")
 	TMap<int32,FVector> LeftWheelPositionDiffMap;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WheelSpline")
 	TMap<int32,FVector> RightWheelPositionDiffMap;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WheelSpline")
 	TMap<int32,float> LeftTrackPartSplinePositionMap;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WheelSpline")
 	TMap<int32,float> RightTrackPartSplinePositionMap;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WheelSpline")
 	float LeftTrackMoveDist=0;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="WheelSpline")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WheelSpline")
 	float RightTrackMoveDist=0;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="TrackInfo")

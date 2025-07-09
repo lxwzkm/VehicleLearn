@@ -50,9 +50,9 @@ protected:
 	virtual void BeginPlay() override;
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Vehicle")
 	TObjectPtr<UStaticMeshComponent> VehicleBody;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Vehicle")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Vehicle")
 	TObjectPtr<USplineComponent> LeftTrackSpline;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Vehicle")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Vehicle")
 	TObjectPtr<USplineComponent> RightTrackSpline;
 	UPROPERTY(EditDefaultsOnly,Category="Vehicle")
 	TObjectPtr<UStaticMeshComponent> Turrent;

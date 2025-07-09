@@ -44,12 +44,12 @@ void ABaseTrackVehicle::ConstructTracksSpline(const TArray<UBaseVehicleWheel*>& 
 	const float Radius=WheelList[0]->WheelRadius+TrackThick;
 	TArray<FVector> InsertPoints;
 	InsertPointsOnWheel(StartPoint,EndPoint,Center,Radius,InsertPoints);
-	for (FVector Point:InsertPoints)
+	for (const FVector& Point:InsertPoints)
 	{
 		int32 Index=TmpLinePointsList.Add(Point);
 		WheelSplineIndexMap.Add(Index,WheelList[0]);
 	}
-	const FVector TmpVector=TmpLinePointsList.Top();
+	const FVector TmpVector=TmpLinePointsList[0];
 	int32 TmpIndewx=TmpLinePointsList.Add(TmpVector);
 	WheelSplineIndexMap.Add(TmpIndewx,WheelList[0]);
 
@@ -98,7 +98,7 @@ void ABaseTrackVehicle::AddTrackStaticmesh(USplineComponent* InputTrackSpline,
 		FTransform SplineTransform;
 		SplineTransform.SetLocation(SplineLocation);
 		SplineTransform.SetRotation(SplineRotation.Quaternion());
-		InputInstancedTrackMesh->UpdateInstanceTransform(i,SplineTransform,false,true,false);
+		InputInstancedTrackMesh->AddInstance(SplineTransform);
 	}
 }
 
@@ -111,28 +111,28 @@ void ABaseTrackVehicle::InsertPointToSpline(const FVector Wheel, const float Rad
 	TArray<FVector> TmpTanPoints=GetTanBetweenWheels(Wheel,Radius,WheelNext,RadiusNext,DownDirection,Forward);
 
 	//Sequence 2
+	TArray<FVector> InsertPoints;
 	if (TmpLinePointsList.Num()>0)
 	{
-		TArray<FVector> InsertPoints;
 		InsertPointsOnWheel(TmpLinePointsList.Last(),TmpTanPoints[0],Wheel,Radius,InsertPoints);
-
-		//Sequence 3
-		for (FVector Point:InsertPoints)
+	}
+	//Sequence 3
+	
+	for (FVector Point:InsertPoints)
+	{
+		int32 Index=TmpLinePointsList.Add(Point);
+		WheelPointOut.Add(Index);
+	}
+	for (int32 i=0;i<TmpTanPoints.Num();i++)
+	{
+		int32 TanIndex=TmpLinePointsList.Add(TmpTanPoints[i]);
+		if (i==0)
 		{
-			int32 Index=TmpLinePointsList.Add(Point);
-			WheelPointOut.Add(Index);
+			WheelPointOut.Add(TanIndex);
 		}
-		for (int32 i=0;i<TmpTanPoints.Num();i++)
+		else
 		{
-			int32 TanIndex=TmpLinePointsList.Add(TmpTanPoints[i]);
-			if (i==0)
-			{
-				WheelPointOut.Add(TanIndex);
-			}
-			else
-			{
-				NextWheelPointOut.Add(TanIndex);
-			}
+			NextWheelPointOut.Add(TanIndex);
 		}
 	}
 	
@@ -146,12 +146,13 @@ void ABaseTrackVehicle::InsertPointsOnWheel(const FVector InStartPoint, const FV
 	const FVector EndVector=InEndPoint-InCenter;
 
 	const float DotValue=UKismetMathLibrary::Dot_VectorVector(StartVector,EndVector);
-	if (const float DiffAngle=UKismetMathLibrary::Acos(StartVector.Length()*EndVector.Length()/DotValue); FMath::Abs(DiffAngle)>=DeltaAngle)
+	const float DiffAngle=UKismetMathLibrary::Acos(DotValue/StartVector.Length()*EndVector.Length());
+	if (FMath::Abs(DiffAngle)>=DeltaAngle)
 	{
 		FVector Direction=StartVector+EndVector;
 		Direction.Normalize(0.0001);
-		const FVector MidPoint=InCenter+Direction*InWheelRadius;
-
+		const FVector MidPoint=Direction*InWheelRadius+InCenter;
+		
 		InsertPointsOnWheel(InStartPoint,MidPoint,InCenter,InWheelRadius,OutInsertPoints);
 		OutInsertPoints.Add(MidPoint);
 		InsertPointsOnWheel(MidPoint,InEndPoint,InCenter,InWheelRadius,OutInsertPoints);
@@ -265,7 +266,7 @@ void ABaseTrackVehicle::UpdateTrackMovement(USplineComponent* InputTrackSpline,
 				Rotation.Roll=180.f+TrackPartRot;
 			}
 			FTransform NewTransform=FTransform(Rotation,NewLocation,NewLocation);
-			InstancedTrackMesh->UpdateInstanceTransform(i,NewTransform);
+			InstancedTrackMesh->UpdateInstanceTransform(i,NewTransform,false,true,false);
 		}
 	}
 }
