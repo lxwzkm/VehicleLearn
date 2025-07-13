@@ -89,7 +89,7 @@ void ABaseVehiclePawn::ContructWheelInfo()
 		const FRotator& RelativeRotation=Wheel->GetRelativeRotation();
 		const FVector& UpVector=UKismetMathLibrary::GetUpVector(RelativeRotation);
 
-		const FVector& NewLocation=RelativeLocation+UpVector;
+		const FVector& NewLocation=RelativeLocation+UpVector*Wheel->NatureSuspensionLength;
 		FTransform NewTransform;
 		NewTransform.SetLocation(NewLocation);
 		NewTransform.SetRotation(RelativeRotation.Quaternion());
@@ -142,7 +142,7 @@ void ABaseVehiclePawn::UpdateControlInfo(const float DeltaTime)
 
 void ABaseVehiclePawn::UpdateLandShapInput()
 {
-	for (const auto Wheel:VehicleWheels)
+	for (const auto& Wheel:VehicleWheels)
 	{
 		Wheel->UpdateSuspensionLength();
 	}
@@ -178,12 +178,11 @@ void ABaseVehiclePawn::UpdateTractionForce()
 void ABaseVehiclePawn::UpdateTractionForceAtWheel(UBaseVehicleWheel* InputWheel, const float InputPower,
 	const float InputAdjustPower)
 {
-	
+	const FVector WheelPoint=InputWheel->LandImpactPoint;
 	if (InputWheel->IsZeroPressure()==false)
 	{
 		//Sequence 1
 		FVector TractionForce;
-		const FVector WheelPoint=InputWheel->LandImpactPoint;
 		if (InputWheel->bIsDrivingWheel)
 		{
 			float Speed=(GetSpeed()-MaxSpeed-3.f)/5.f;

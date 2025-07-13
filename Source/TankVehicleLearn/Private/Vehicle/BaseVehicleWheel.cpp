@@ -23,7 +23,7 @@ void UBaseVehicleWheel::UpdateSuspensionLength()
 	const FVector SuspDirection=UKismetMathLibrary::GetUpVector(SuspRotation);
 
 	FHitResult HitResult;
-	const FVector EndLocation=SuspLocation+SuspDirection*-(NatureSuspensionLength+1);
+	const FVector EndLocation=SuspLocation+(NatureSuspensionLength+1)*-1*SuspDirection;
 	UKismetSystemLibrary::SphereTraceSingle(this,SuspLocation,EndLocation,WheelRadius,WheelTraceType,false
 		,TArray<AActor*>(),EDrawDebugTrace::None,HitResult,true);
 
@@ -38,8 +38,11 @@ void UBaseVehicleWheel::UpdateSuspensionLength()
 		SuspensionLength=NatureSuspensionLength;
 	}
 
-	const FVector NewLocation=SuspLocation+SuspDirection*-SuspensionLength;
+	const FVector NewLocation=SuspLocation+SuspDirection*SuspensionLength*-1;
 	SetWorldLocation(NewLocation);
+	
+	UE_LOG(LogTemp, Warning, TEXT("Wheel [%s]: SuspLen = %.2f | Hit = %d | FinalZ = %.2f"),
+	   *GetName(), SuspensionLength, HitResult.bBlockingHit, NewLocation.Z);
 }
 
 void UBaseVehicleWheel::GetSupportVector(const float DeltaTime, float& SupportForce, float& SpringForce,

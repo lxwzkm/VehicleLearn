@@ -53,7 +53,7 @@ public:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "WheelInfo")
 	FVector LandImpactNormal=FVector::ZeroVector;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "WheelInfo")
-	float WheelRadius=45.f;
+	float WheelRadius=38.f;
 
 protected:
 };

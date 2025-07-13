@@ -16,8 +16,8 @@ void ABaseTrackVehicle::ConstructTracksSpline(const TArray<UBaseVehicleWheel*>& 
 	TArray<FVector> TmpLinePointsList;
 	for (int32 i = 0; i < Length; i++)
 	{
-		int32 TmpIndex=i%WheelList.Num();
-		int32 NextIndex=(TmpIndex+1)%WheelList.Num();
+		int32 TmpIndex=i%Length;
+		int32 NextIndex=(TmpIndex+1)%Length;
 
 		const FVector CurrentLocation=WheelList[TmpIndex]->GetComponentLocation();
 		const float CurrentRadius=WheelList[TmpIndex]->WheelRadius+TrackThick;
@@ -38,8 +38,8 @@ void ABaseTrackVehicle::ConstructTracksSpline(const TArray<UBaseVehicleWheel*>& 
 	}
 
 	//Sequence 2
-	const FVector StartPoint=TmpLinePointsList.Last();
-	const FVector EndPoint=TmpLinePointsList.Top();
+	const FVector StartPoint=TmpLinePointsList[TmpLinePointsList.Num()-1];
+	const FVector EndPoint=TmpLinePointsList[0];
 	const FVector Center=WheelList[0]->GetComponentLocation();
 	const float Radius=WheelList[0]->WheelRadius+TrackThick;
 	TArray<FVector> InsertPoints;
@@ -94,11 +94,13 @@ void ABaseTrackVehicle::AddTrackStaticmesh(USplineComponent* InputTrackSpline,
 		const FVector SplineLocation=InputTrackSpline->GetTransformAtDistanceAlongSpline(TmpSplinePosition,ESplineCoordinateSpace::Local,false).GetLocation();
 		FRotator SplineRotation=InputTrackSpline->GetRotationAtDistanceAlongSpline(TmpSplinePosition,ESplineCoordinateSpace::Local);
 		const FVector SplineRightVector=InputTrackSpline->GetRightVectorAtDistanceAlongSpline(TmpSplinePosition,ESplineCoordinateSpace::Local);
-		SplineRotation.Roll=TrackPartRot+SplineRightVector.Y<0?180.f:SplineRotation.Roll;
+		SplineRotation.Roll=TrackPartRot+(SplineRightVector.Y<0?180.f:SplineRotation.Roll);
 		FTransform SplineTransform;
 		SplineTransform.SetLocation(SplineLocation);
 		SplineTransform.SetRotation(SplineRotation.Quaternion());
-		InputInstancedTrackMesh->AddInstance(SplineTransform);
+		SplineTransform.SetScale3D(FVector(1.f, 1.f, 1.f));
+		const int32 Index=InputInstancedTrackMesh->AddInstance(SplineTransform);
+		InTrackPartSplinePositionMap.Add(Index,TmpSplinePosition);
 	}
 }
 
@@ -117,7 +119,6 @@ void ABaseTrackVehicle::InsertPointToSpline(const FVector Wheel, const float Rad
 		InsertPointsOnWheel(TmpLinePointsList.Last(),TmpTanPoints[0],Wheel,Radius,InsertPoints);
 	}
 	//Sequence 3
-	
 	for (FVector Point:InsertPoints)
 	{
 		int32 Index=TmpLinePointsList.Add(Point);
@@ -138,15 +139,19 @@ void ABaseTrackVehicle::InsertPointToSpline(const FVector Wheel, const float Rad
 	
 }
 
-void ABaseTrackVehicle::InsertPointsOnWheel(const FVector InStartPoint, const FVector InEndPoint,
-	const FVector InCenter, const float InWheelRadius, TArray<FVector>& OutInsertPoints)
+void ABaseTrackVehicle::InsertPointsOnWheel(const FVector& InStartPoint, const FVector& InEndPoint,
+	const FVector& InCenter, const float InWheelRadius, TArray<FVector>& OutInsertPoints)
 {
-	const float DeltaAngle=15.f;
-	const FVector StartVector=InStartPoint-InCenter;
-	const FVector EndVector=InEndPoint-InCenter;
+	const float DeltaAngle = FMath::DegreesToRadians(15.f);
+	const FVector StartVector = InStartPoint-InCenter;
+	const FVector EndVector = InEndPoint-InCenter;
 
-	const float DotValue=UKismetMathLibrary::Dot_VectorVector(StartVector,EndVector);
-	const float DiffAngle=UKismetMathLibrary::Acos(DotValue/StartVector.Length()*EndVector.Length());
+	const float StartLen = StartVector.Length();
+	const float EndLen = EndVector.Length();
+
+	const float DotValue=FVector::DotProduct(StartVector, EndVector);
+	const float CosAngle = DotValue / (StartLen * EndLen);
+	const float DiffAngle = FMath::Acos(CosAngle);
 	if (FMath::Abs(DiffAngle)>=DeltaAngle)
 	{
 		FVector Direction=StartVector+EndVector;
@@ -228,16 +233,16 @@ void ABaseTrackVehicle::UpdateTrackMovement(USplineComponent* InputTrackSpline,
 	//Sequence 2
 	const FVector WheelLocation=WheelList[0]->GetComponentLocation();
 	const FVector Velocity=VehicleBody->GetPhysicsLinearVelocityAtPoint(WheelLocation);
-	const float DotValue=UKismetMathLibrary::Dot_VectorVector(VehicleBody->GetForwardVector(),Velocity);
+	const float DotValue=UKismetMathLibrary::Dot_VectorVector(Velocity,VehicleBody->GetForwardVector());
 	const float BodySpeed=UKismetMathLibrary::Sin(DotValue)*Velocity.Length();
 
 	//Sequence 3
 	const float SplineLength=InputTrackSpline->GetSplineLength();
 	const float PerTrackLength=SplineLength/InstancedTrackMesh->GetInstanceCount();
 	float TrackMoveDist=bIsLeftPart?LeftTrackMoveDist:RightTrackMoveDist;
-	TrackMoveDist=TrackMoveDist+BodySpeed*DeltaTime;
-	float TmpTrackMoveDist=TrackMoveDist<0?TrackMoveDist+SplineLength:TrackMoveDist;
-	TrackMoveDist=TrackMoveDist>SplineLength?TrackMoveDist-SplineLength:TrackMoveDist;
+	TrackMoveDist=TrackMoveDist+(BodySpeed*DeltaTime);
+	const float TmpTrackMoveDist=TrackMoveDist<0?TrackMoveDist+SplineLength:TrackMoveDist;
+	TrackMoveDist=TrackMoveDist>SplineLength?TmpTrackMoveDist-SplineLength:TmpTrackMoveDist;
 	if (bIsLeftPart)
 	{
 		LeftTrackMoveDist=TrackMoveDist;
@@ -265,7 +270,7 @@ void ABaseTrackVehicle::UpdateTrackMovement(USplineComponent* InputTrackSpline,
 			{
 				Rotation.Roll=180.f+TrackPartRot;
 			}
-			FTransform NewTransform=FTransform(Rotation,NewLocation,NewLocation);
+			FTransform NewTransform=FTransform(Rotation,NewLocation,FVector(1,1,1));
 			InstancedTrackMesh->UpdateInstanceTransform(i,NewTransform,false,true,false);
 		}
 	}
@@ -318,8 +323,10 @@ void ABaseTrackVehicle::InitVehicle()
 	const float Rate=GetDriveCount()/VehicleWheels.Num();
 	MaxPower=TempMass * MaxPower * Rate* 0.125 ;
 	PowerUpSpeed=TempMass * PowerUpSpeed * 0.25 ;
-	SuspensionDamp=TempMass * SuspensionDamp * 1.0f ;
+	const float TmpDamp=TempMass * SuspensionDamp * 1.0f ;
+	SuspensionDamp=TmpDamp;
 	SuspensionStrength=TempMass * SuspensionStrength * 5.f ;
+	GEngine->AddOnScreenDebugMessage(-1,20.f,FColor::Red,FString::Printf(TEXT("SusDamp:%f"),SuspensionDamp));
 
 	for (const auto Wheel:VehicleWheels)
 	{

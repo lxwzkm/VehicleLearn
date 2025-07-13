@@ -26,7 +26,7 @@ public:
 		UPARAM(ref)TMap<int32,float>& InTrackPartSplinePositionMap);
 	void InsertPointToSpline(const FVector Wheel,const float Radius,const FVector WheelNext,const float RadiusNext,UPARAM(ref)TArray<FVector>& TmpLinePointsList,
 		TArray<int32>& WheelPointOut,TArray<int32>& NextWheelPointOut);
-	void InsertPointsOnWheel(const FVector InStartPoint,const FVector InEndPoint,const FVector InCenter,const float InWheelRadius,TArray<FVector>& OutInsertPoints);
+	void InsertPointsOnWheel(const FVector& InStartPoint,const FVector& InEndPoint,const FVector& InCenter,const float InWheelRadius,TArray<FVector>& OutInsertPoints);
 	TArray<FVector> GetTanBetweenWheels(const FVector Incenter1,const float InRadius1,const FVector Incenter2,const float InRadius2,FVector InDownDirction,const FVector InForwardDirection);
 
 	virtual void UpdateVehicleMovement(const float DeltaTime) override;
