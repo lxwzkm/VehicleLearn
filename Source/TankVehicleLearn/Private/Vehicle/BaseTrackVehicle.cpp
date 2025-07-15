@@ -84,6 +84,7 @@ void ABaseTrackVehicle::ConstructTracksSpline(const TArray<UBaseVehicleWheel*>& 
 void ABaseTrackVehicle::AddTrackStaticmesh(USplineComponent* InputTrackSpline,
 	UInstancedStaticMeshComponent* InputInstancedTrackMesh, TMap<int32, float>& InTrackPartSplinePositionMap)
 {
+	
 	//Sequence 1
 	float PerTrackLength=InputTrackSpline->GetSplineLength()/TrackNumber;
 
@@ -272,6 +273,7 @@ void ABaseTrackVehicle::UpdateTrackMovement(USplineComponent* InputTrackSpline,
 			}
 			FTransform NewTransform=FTransform(Rotation,NewLocation,FVector(1,1,1));
 			InstancedTrackMesh->UpdateInstanceTransform(i,NewTransform,false,true,false);
+			InstancedTrackMesh->UpdateInstanceTransform(i,NewTransform,false,true,false);
 		}
 	}
 }
@@ -284,7 +286,7 @@ void ABaseTrackVehicle::CompleteConstructTarack()
 	}
 	for (auto Wheel:RightWheels)
 	{
-		Wheel->WheelRadius-=TrackThick;
+		Wheel->WheelRadius+=TrackThick;
 	}
 	if (VehicleBody->DoesSocketExist("TurretSocket"))
 	{

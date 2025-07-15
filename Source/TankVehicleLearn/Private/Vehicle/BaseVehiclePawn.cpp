@@ -161,6 +161,7 @@ void ABaseVehiclePawn::UpdateSupportForce(const float DeltaTime)
 		const FVector& Force=SupportForce*ForceVector*FVector(0,0,1);
 		const FVector& Location=UKismetMathLibrary::TransformLocation(VehicleBody->GetComponentTransform(),Wheel->WheelInitRelTransf.GetLocation());
 		VehicleBody->AddForceAtLocation(Force,Location);
+		
 	}
 }
 

@@ -25,7 +25,7 @@ void UBaseVehicleWheel::UpdateSuspensionLength()
 	FHitResult HitResult;
 	const FVector EndLocation=SuspLocation+(NatureSuspensionLength+1)*-1*SuspDirection;
 	UKismetSystemLibrary::SphereTraceSingle(this,SuspLocation,EndLocation,WheelRadius,WheelTraceType,false
-		,TArray<AActor*>(),EDrawDebugTrace::None,HitResult,true);
+		,TArray<AActor*>(),EDrawDebugTrace::ForDuration,HitResult,true);
 
 	if (HitResult.bBlockingHit)
 	{
@@ -56,7 +56,7 @@ void UBaseVehicleWheel::GetSupportVector(const float DeltaTime, float& SupportFo
 
 void UBaseVehicleWheel::GetPressure(const float DeltaTime, float& pressure, float& SpringForce, float& DampForce)
 {
-	float TempMaxForce=NatureSuspensionLength*SuspensionLength;
+	const float TempMaxForce=NatureSuspensionLength*SuspensionStrength;//不是length否则就会掉到地面下面撑不住车体
 
 	SpringForce=(NatureSuspensionLength-SuspensionLength)*SuspensionStrength;
 	SpringForce=FMath::Clamp(SpringForce,0,TempMaxForce);
